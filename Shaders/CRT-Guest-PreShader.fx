@@ -1,6 +1,6 @@
 /*
 
-	CRT - Guest - PreShader (Copyright (C) 2018-2023 guest(r) - guest.r@gmail.com)
+	CRT - Guest - PreShader (Copyright (C) 2018-2024 guest(r) - guest.r@gmail.com)
 
 	Incorporates many good ideas and suggestions from Dr. Venom.
 
@@ -19,20 +19,12 @@
 
 */
 
-uniform float ResolutionX <
-	ui_label = "Resolution X";
-> = 320.0;
-
-uniform float ResolutionY <
-	ui_label = "Resolution Y";
-> = 240.0;
-
 uniform float PR <
 	ui_type = "drag";
 	ui_min = 0.0;
 	ui_max = 0.5;
 	ui_step = 0.01;
-	ui_label = "Persistence Red";
+	ui_label = "Persistence 'R'";
 > = 0.32;
 
 uniform float PG <
@@ -40,7 +32,7 @@ uniform float PG <
 	ui_min = 0.0;
 	ui_max = 0.5;
 	ui_step = 0.01;
-	ui_label = "Persistence Green";
+	ui_label = "Persistence 'G'";
 > = 0.32;
 
 uniform float PB <
@@ -48,7 +40,7 @@ uniform float PB <
 	ui_min = 0.0;
 	ui_max = 0.5;
 	ui_step = 0.01;
-	ui_label = "Persistence Blue";
+	ui_label = "Persistence 'B'";
 > = 0.32;
 
 uniform float AS <
@@ -157,7 +149,7 @@ uniform float BP <
 
 #include "ReShade.fxh"
 
-#define TexSize float2(ResolutionX,ResolutionY)
+#define TexSize float2(Resolution_X,Resolution_Y)
 #define OrgSize float4(TexSize,1.0/TexSize)
 #define COMPAT_TEXTURE(c,d) tex2D(c,d)
 
@@ -219,7 +211,7 @@ float4 AfterglowPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float3 clr=(2.5*color0+color1+color2+color3+color4)/6.5;
 	float3 a=COMPAT_TEXTURE(AFTER_S1,texcoord.xy).rgb;
 	if((color0.r+color0.g+color0.b<5.0/255.0)){w=0.0;}
-	float3 result=lerp(max(lerp(clr,a,0.49+float3(PR,PG,PB))-2.0/255.0,0.0),clr,w);
+	float3 result=lerp(max(lerp(clr,a,0.49+float3(PR,PG,PB))-1.25/255.0,0.0),clr,w);
 	return float4(result,w);
 }
 
