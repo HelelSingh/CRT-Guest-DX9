@@ -1557,10 +1557,6 @@ float4 Signal_2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
    -0.002491729,-0.000721149, 0.002164659, 0.006313635, 0.011789103,
     0.018545660, 0.026414396, 0.035100710, 0.044196567, 0.053207202,
     0.061590275, 0.068803602, 0.074356193, 0.077856564, 0.079052396};
-	float chroma_filter_4_phase[33]={
-    0.000000000, 0.000000000, 0.000000000, 0.000000000, 0.000000000, 0.000000000, 0.000000000, 0.000000000,-0.000118847,-0.000271306,-0.000502642,
-   -0.000930833,-0.001451013,-0.002064744,-0.002700432,-0.003241276,-0.003524948,-0.003350284,-0.002491729,-0.000721149, 0.002164659, 0.006313635,
-    0.011789103, 0.018545660, 0.026414396, 0.035100710, 0.044196567, 0.053207202, 0.061590275, 0.068803602, 0.074356193, 0.077856564, 0.079052396};
 	float luma_filter_2_phase[33]={
    -0.000174844,-0.000205844,-0.000149453,-0.000051693, 0.000000000,-0.000066171,-0.000245058,-0.000432928,-0.000472644,-0.000252236, 0.000198929,
     0.000687058, 0.000944112, 0.000803467, 0.000363199, 0.000013422, 0.000253402, 0.001339461, 0.002932972, 0.003983485, 0.003026683,-0.001102056,
@@ -1577,7 +1573,7 @@ float4 Signal_2_PS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float3 signal=0.0;
 	float2 one=0.25*OrgSize.zz/res;
 	float phase= (ntsc_phase<1.5)?((OrgSize.x>300.0)?2.0:3.0):((ntsc_phase>2.5)?3.0:2.0);
-	if(ntsc_phase==4.0){phase=2.0;chroma_filter_2_phase=chroma_filter_4_phase;}
+	if(ntsc_phase==4.0)phase=2.0;
 	float cres =ntsc_cscale; if(phase==3.0||ntsc_phase==4.0)cres=min(cres,2.25); one.y=one.y/cres;
 	if(phase<2.5){for(int i=0;i<TAPS_2_phase;i++)
 	{
@@ -2040,13 +2036,13 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float colmx=max(mx1,cm);
 	float w3=min((cm+0.0001)/(colmx+0.0005),1.0); if(interb)w3=1.0;
 	float2 dx=float2(0.001,0.0);
-	float mx0=COMPAT_TEXTURE(NTSC_S13,pos1-dx).a;
-	float mx2=COMPAT_TEXTURE(NTSC_S13,pos1+dx).a;
+	float mx0=tex2Dlod(NTSC_S13,float4(pos1-dx,0,0)).a;
+	float mx2=tex2Dlod(NTSC_S13,float4(pos1+dx,0,0)).a;
 	float mxg=max(max(mx0,mx1),max(mx2,cm));
 	float mx=pow(mxg,1.40/gamma_in);
 	dx=float2(OrgSize.z,0.0)*0.25;
-	mx0=COMPAT_TEXTURE(NTSC_S13,pos1-dx).a;
-	mx2=COMPAT_TEXTURE(NTSC_S13,pos1+dx).a;
+	mx0=tex2Dlod(NTSC_S13,float4(pos1-dx,0,0)).a;
+	mx2=tex2Dlod(NTSC_S13,float4(pos1+dx,0,0)).a;
 	float mb=(1.0-min(abs(mx0-mx2)/(0.5+mx1),1.0));
 	float3 orig1=color;
 	float3 one=1.0;

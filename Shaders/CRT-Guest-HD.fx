@@ -1658,13 +1658,13 @@ float4 ChromaticPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float colmx=max(mx1,cm);
 	float w3=min((cm+0.0001)/(colmx+0.0005),1.0); if(interb)w3=1.0;
 	float2 dx=float2(0.001,0.0);
-	float mx0=COMPAT_TEXTURE(CRTHD_S7,pos1-dx).a;
-	float mx2=COMPAT_TEXTURE(CRTHD_S7,pos1+dx).a;
+	float mx0=tex2Dlod(CRTHD_S7,float4(pos1-dx,0,0)).a;
+	float mx2=tex2Dlod(CRTHD_S7,float4(pos1+dx,0,0)).a;
 	float mxg=max(max(mx0,mx1),max(mx2,cm));
 	float mx=pow(mxg,1.40/gamma_in);
 	dx=float2(OrgSize.z,0.0)*0.25;
-	mx0=COMPAT_TEXTURE(CRTHD_S7,pos1-dx).a;
-	mx2=COMPAT_TEXTURE(CRTHD_S7,pos1+dx).a;
+	mx0=tex2Dlod(CRTHD_S7,float4(pos1-dx,0,0)).a;
+	mx2=tex2Dlod(CRTHD_S7,float4(pos1+dx,0,0)).a;
 	float mb=(1.0-min(abs(mx0-mx2)/(0.5+mx1),1.0));
 	float3 orig1=color;
 	float3 one=1.0;
