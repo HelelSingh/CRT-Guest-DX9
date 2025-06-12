@@ -1,16 +1,19 @@
 /*
 
-	CRT - Guest - PreShader (Copyright (C) 2018-2024 guest(r) - guest.r@gmail.com)
+	CRT - Guest - PreShader
+
+	Copyright (C) 2018-2025 guest(r)
 
 	Incorporates many good ideas and suggestions from Dr. Venom.
 
-	I would also like give thanks to many Libretro forums members for continuous feedbacks, suggestions and caring about the shader.
+	I would also like give thanks to many Libretro forums members for continuous feedback, suggestions and using the shader.
 
 	This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
-	This program is distributed in the hopes that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+	This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+	without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License along with this program; if not,
 	write to the Free Software Foundation, Inc, 59 Temple Place - STE 330, Boston, MA 02111-1307, USA.
@@ -51,7 +54,7 @@ uniform float AS <
 	ui_label = "Afterglow Strength";
 > = 0.2;
 
-uniform float sat <
+uniform float ST <
 	ui_type = "drag";
 	ui_min = 0.0;
 	ui_max = 1.0;
@@ -151,7 +154,7 @@ uniform float BP <
 
 #define TexSize float2(Resolution_X,Resolution_Y)
 #define OrgSize float4(TexSize,1.0/TexSize)
-#define COMPAT_TEXTURE(c,d) tex2D(c,d)
+#define texCD(c,d) tex2Dlod(c,float4(d,0,0))
 
 #ifndef Resolution_X
 #define Resolution_X 320
@@ -161,22 +164,22 @@ uniform float BP <
 #define Resolution_Y 240
 #endif
 
-#define AFTER_S0 ReShade::BackBuffer
+#define GLOW_S00 ReShade::BackBuffer
 
-texture AFTER_T1{Width=Resolution_X;Height=Resolution_Y ;Format=RGBA32F;};
-sampler AFTER_S1{Texture=AFTER_T1;AddressU=BORDER;AddressV=BORDER;AddressW=BORDER;MagFilter=POINT ;MinFilter=POINT ;MipFilter=POINT ;};
+texture GLOW_T01{Width=Resolution_X;Height=Resolution_Y ;Format=RGBA16F;};
+sampler GLOW_S01{Texture=GLOW_T01;AddressU=BORDER;AddressV=BORDER;AddressW=BORDER;MagFilter=POINT ;MinFilter=POINT ;MipFilter=POINT ;};
 
-texture AFTER_01<source="CRT-LUT-1.png";>{Width=1024;Height=32;};
-sampler AFTER_L1{Texture=AFTER_01;};
+texture GLOW_001<source="CRT-LUT-1.png";>{Width=1024;Height=32;};
+sampler GLOW_L01{Texture=GLOW_001;};
 
-texture AFTER_02<source="CRT-LUT-2.png";>{Width=1024;Height=32;};
-sampler AFTER_L2{Texture=AFTER_02;};
+texture GLOW_002<source="CRT-LUT-2.png";>{Width=1024;Height=32;};
+sampler GLOW_L02{Texture=GLOW_002;};
 
-texture AFTER_03<source="CRT-LUT-3.png";>{Width=1024;Height=32;};
-sampler AFTER_L3{Texture=AFTER_03;};
+texture GLOW_003<source="CRT-LUT-3.png";>{Width=1024;Height=32;};
+sampler GLOW_L03{Texture=GLOW_003;};
 
-texture AFTER_04<source="CRT-LUT-4.png";>{Width=1024;Height=32;};
-sampler AFTER_L4{Texture=AFTER_04;};
+texture GLOW_004<source="CRT-LUT-4.png";>{Width=1024;Height=32;};
+sampler GLOW_L04{Texture=GLOW_004;};
 
 float3 fix_lut(float3 lut,float3 ref)
 {
@@ -203,15 +206,15 @@ float4 AfterglowPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float2 dx=float2(OrgSize.z,0.0);
 	float2 dy=float2(0.0,OrgSize.w);
 	float w=1.0;
-	float3 color0=COMPAT_TEXTURE(AFTER_S0,texcoord.xy   ).rgb;
-	float3 color1=COMPAT_TEXTURE(AFTER_S0,texcoord.xy-dx).rgb;
-	float3 color2=COMPAT_TEXTURE(AFTER_S0,texcoord.xy+dx).rgb;
-	float3 color3=COMPAT_TEXTURE(AFTER_S0,texcoord.xy-dy).rgb;
-	float3 color4=COMPAT_TEXTURE(AFTER_S0,texcoord.xy+dy).rgb;
-	float3 clr=(2.5*color0+color1+color2+color3+color4)/6.5;
-	float3 a=COMPAT_TEXTURE(AFTER_S1,texcoord.xy).rgb;
+	float3 color0=texCD(GLOW_S00,texcoord   ).rgb;
+	float3 color1=texCD(GLOW_S00,texcoord-dx).rgb;
+	float3 color2=texCD(GLOW_S00,texcoord+dx).rgb;
+	float3 color3=texCD(GLOW_S00,texcoord-dy).rgb;
+	float3 color4=texCD(GLOW_S00,texcoord+dy).rgb;
+	float3 cr=(2.5*color0+color1+color2+color3+color4)/6.5;
+	float3 a=texCD(GLOW_S01,texcoord).rgb;
 	if((color0.r+color0.g+color0.b<5.0/255.0)){w=0.0;}
-	float3 result=lerp(max(lerp(clr,a,0.49+float3(PR,PG,PB))-1.25/255.0,0.0),clr,w);
+	float3 result=lerp(max(lerp(cr,a,0.49+float3(PR,PG,PB))-1.25/255.0,0.0),cr,w);
 	return float4(result,w);
 }
 
@@ -230,52 +233,49 @@ float4 PreShaderPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	const float3x3 ToREC=float3x3(1.716651,-0.666684,0.017640,-0.355671,1.616481,-0.042771,-0.253366,0.015769,0.942103);
 	const float3x3 D65_to_D55=float3x3(0.4850339153,0.2500956126,0.0227359648,0.3488957224,0.6977914447,0.1162985741,0.1302823568,0.0521129427,0.6861537456);
 	const float3x3 D65_to_D93=float3x3(0.3412754080,0.1759701322,0.0159972847,0.3646170520,0.7292341040,0.1215390173,0.2369894093,0.0947957637,1.2481442225);
-	float4 imgColor=COMPAT_TEXTURE(AFTER_S0,texcoord.xy);
-	float4 aftrglow=COMPAT_TEXTURE(AFTER_S1,texcoord.xy);
+	float4 imgColor=texCD(GLOW_S00,texcoord);
+	float4 aftrglow=texCD(GLOW_S01,texcoord);
 	float w=1.0-aftrglow.w;
 	float l=length(aftrglow.rgb);
-	aftrglow.rgb=AS*w*normalize(pow(aftrglow.rgb+0.01,sat))*l;
+	aftrglow.rgb=AS*w*normalize(pow(aftrglow.rgb+0.01,ST))*l;
 	float bp=w*BP/255.0;
-	if(sega_fix>0.5)imgColor.rgb=imgColor.rgb*(255.0/239.0);
+	if(sega_fix>0.5) imgColor.rgb=imgColor.rgb*(255.0/239.0);
 	imgColor.rgb=min(imgColor.rgb,1.0);
 	float3 color=imgColor.rgb;
-	if(int(TNTC)==0)
+	if(int(TNTC)==0) {color.rgb=imgColor.rgb;}else
 	{
-	color.rgb=imgColor.rgb;
-	}else
-	{
-	float lutlow=LUTLOW/255.0;float invLS=1.0/32.0;
+	float lutlow=LUTLOW/255.0;float invs=1.0/32.0;
 	float3 lut_ref=imgColor.rgb+lutlow*(1.0-pow(imgColor.rgb,0.333.xxx));
-	float lutb=lut_ref.b*(1.0-0.5*invLS);
-	lut_ref.rg=lut_ref.rg*(1.0-invLS)+0.5*invLS;
+	float lutb=lut_ref.b*(1.0-0.5*invs);
+	lut_ref.rg=lut_ref.rg*(1.0-invs)+0.5*invs;
 	float tile1=ceil(lutb*(32.0-1.0));
 	float tile0=max(tile1-1.0,0.0);
 	float f=frac(lutb*(32.0-1.0));if(f==0.0)f=1.0;
-	float2 coord0=float2(tile0+lut_ref.r,lut_ref.g)*float2(invLS,1.0);
-	float2 coord1=float2(tile1+lut_ref.r,lut_ref.g)*float2(invLS,1.0);
+	float2 coord0=float2(tile0+lut_ref.r,lut_ref.g)*float2(invs,1.0);
+	float2 coord1=float2(tile1+lut_ref.r,lut_ref.g)*float2(invs,1.0);
 	float4 color1,color2,res;
 	if(int(TNTC)==1)
 	{
-	color1=COMPAT_TEXTURE(AFTER_L1,coord0);
-	color2=COMPAT_TEXTURE(AFTER_L1,coord1);
+	color1=texCD(GLOW_L01,coord0);
+	color2=texCD(GLOW_L01,coord1);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==2)
 	{
-	color1=COMPAT_TEXTURE(AFTER_L2,coord0);
-	color2=COMPAT_TEXTURE(AFTER_L2,coord1);
+	color1=texCD(GLOW_L02,coord0);
+	color2=texCD(GLOW_L02,coord1);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==3)
 	{
-	color1=COMPAT_TEXTURE(AFTER_L3,coord0);
-	color2=COMPAT_TEXTURE(AFTER_L3,coord1);
+	color1=texCD(GLOW_L03,coord0);
+	color2=texCD(GLOW_L03,coord1);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==4)
 	{
-	color1=COMPAT_TEXTURE(AFTER_L4,coord0);
-	color2=COMPAT_TEXTURE(AFTER_L4,coord1);
+	color1=texCD(GLOW_L04,coord0);
+	color2=texCD(GLOW_L04,coord1);
 	res=lerp(color1,color2,f);
 	}
 	res.rgb=fix_lut(res.rgb,imgColor.rgb);
@@ -302,10 +302,10 @@ float4 PreShaderPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	color=clamp(color,0.0,1.0);
 	color=pow(color,1.0/p);
 	if(CP==-1.0)color=c;
-	float3 scolor1=plant(pow(color,wp_saturation),max(max(color.r,color.g),color.b));
+	float3 solor1=plant(pow(color,wp_saturation),max(max(color.r,color.g),color.b));
 	float luma=dot(color,float3(0.299,0.587,0.114));
-	float3 scolor2=lerp(luma,color,wp_saturation);
-	color=(wp_saturation>1.0)?scolor1:scolor2;
+	float3 solor2=lerp(luma,color,wp_saturation);
+	color=(wp_saturation>1.0)?solor1:solor2;
 	color=plant(color,contrast(max(max(color.r,color.g),color.b)));
 	p=2.2;
 	color=clamp(color,0.0,1.0);
@@ -332,7 +332,7 @@ technique CRT_Guest_PreShader
 	{
 	VertexShader=PostProcessVS;
 	PixelShader=AfterglowPS;
-	RenderTarget=AFTER_T1;
+	RenderTarget=GLOW_T01;
 	}
 	pass PreShader
 	{
