@@ -126,7 +126,7 @@ uniform float pre_bb <
 	ui_label = "Brightness Adjustment";
 > = 1.0;
 
-uniform float contr <
+uniform float contra <
 	ui_type = "drag";
 	ui_min = -2.0;
 	ui_max = 2.0;
@@ -192,7 +192,7 @@ float3 fix_lut(float3 lut,float3 ref)
 
 float contrast(float x)
 {
-	return max(lerp(x,smoothstep(0.0,1.0,x),contr),0.0);
+	return max(lerp(x,smoothstep(0,1.0,x),contra),0.0);
 }
 
 float3 plant(float3 tar,float r)
@@ -251,31 +251,31 @@ float4 PreShaderPS(float4 position:SV_Position,float2 texcoord:TEXCOORD):SV_Targ
 	float tile1=ceil(lutb*(32.0-1.0));
 	float tile0=max(tile1-1.0,0.0);
 	float f=frac(lutb*(32.0-1.0));if(f==0.0)f=1.0;
-	float2 coord0=float2(tile0+lut_ref.r,lut_ref.g)*float2(invs,1.0);
-	float2 coord1=float2(tile1+lut_ref.r,lut_ref.g)*float2(invs,1.0);
+	float2 coord1=float2(tile0+lut_ref.r,lut_ref.g)*float2(invs,1.0);
+	float2 coord2=float2(tile1+lut_ref.r,lut_ref.g)*float2(invs,1.0);
 	float4 color1,color2,res;
 	if(int(TNTC)==1)
 	{
-	color1=texCD(GLOW_L01,coord0);
-	color2=texCD(GLOW_L01,coord1);
+	color1=texCD(GLOW_L01,coord1);
+	color2=texCD(GLOW_L01,coord2);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==2)
 	{
-	color1=texCD(GLOW_L02,coord0);
-	color2=texCD(GLOW_L02,coord1);
+	color1=texCD(GLOW_L02,coord1);
+	color2=texCD(GLOW_L02,coord2);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==3)
 	{
-	color1=texCD(GLOW_L03,coord0);
-	color2=texCD(GLOW_L03,coord1);
+	color1=texCD(GLOW_L03,coord1);
+	color2=texCD(GLOW_L03,coord2);
 	res=lerp(color1,color2,f);
 	}else
 	if(int(TNTC)==4)
 	{
-	color1=texCD(GLOW_L04,coord0);
-	color2=texCD(GLOW_L04,coord1);
+	color1=texCD(GLOW_L04,coord1);
+	color2=texCD(GLOW_L04,coord2);
 	res=lerp(color1,color2,f);
 	}
 	res.rgb=fix_lut(res.rgb,imgColor.rgb);
